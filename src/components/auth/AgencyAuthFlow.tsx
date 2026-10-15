@@ -18,6 +18,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { DemoAccountSelector } from './DemoAccountSelector';
 
 interface AgencyAuthFlowProps {
   initialMode?: 'signin' | 'register' | 'forgot-password' | 'verify-email';
@@ -443,6 +444,15 @@ export const AgencyAuthFlow: React.FC<AgencyAuthFlowProps> = ({
                       Register your Marketing Agency
                     </button>
                   </div>
+
+                  <DemoAccountSelector
+                    selectedEmail={email}
+                    onSelectAccount={({ email: selEmail, password: selPassword }) => {
+                      setEmail(selEmail);
+                      setPassword(selPassword);
+                      setError(null);
+                    }}
+                  />
                 </form>
               )}
 

@@ -19,6 +19,7 @@ import {
   Store,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { DemoAccountSelector } from './DemoAccountSelector';
 
 interface MediaOwnerPortalProps {
   initialMode?: 'overview' | 'login' | 'register';
@@ -369,6 +370,16 @@ export const MediaOwnerPortal: React.FC<MediaOwnerPortalProps> = ({
                   <ArrowRight size={14} />
                 </button>
               </form>
+
+              <DemoAccountSelector
+                className="mt-4"
+                selectedEmail={loginEmail}
+                onSelectAccount={({ email: selEmail, password: selPassword }) => {
+                  setLoginEmail(selEmail);
+                  setLoginPassword(selPassword);
+                  setError(null);
+                }}
+              />
 
               <div className="mt-6 pt-5 border-t border-[#ece8e1] text-center">
                 <p className="text-xs text-zinc-500">

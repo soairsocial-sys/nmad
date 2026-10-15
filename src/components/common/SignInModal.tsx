@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
+import { DemoAccountSelector } from '../auth/DemoAccountSelector';
 
 export interface SignInModalProps {
   isOpen: boolean;
@@ -76,12 +77,6 @@ export const SignInModal: React.FC<SignInModalProps> = ({
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleQuickAccountSelect = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('AdGrid2026!');
-    setErrorMessage(null);
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
@@ -237,33 +232,15 @@ export const SignInModal: React.FC<SignInModalProps> = ({
               </div>
 
               {/* 1-Click Demo Accounts */}
-              <div className="pt-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1.5">
-                  Quick Evaluation Accounts (1-Click Fill)
-                </span>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {[
-                    { label: 'Agency Admin', email: 'agency@adgrid.test' },
-                    { label: 'Brand Client', email: 'client@adgrid.test' },
-                    { label: 'Media Owner', email: 'mediaowner@adgrid.test' },
-                    { label: 'Platform Admin', email: 'admin@adgrid.test' },
-                  ].map((acc) => (
-                    <button
-                      key={acc.email}
-                      type="button"
-                      onClick={() => handleQuickAccountSelect(acc.email)}
-                      className={`text-left px-2.5 py-1.5 rounded-xl border text-[11px] font-bold flex items-center justify-between transition-colors cursor-pointer ${
-                        email === acc.email
-                          ? 'bg-[#181716] text-white border-[#181716]'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <span>{acc.label}</span>
-                      <Zap className="w-3 h-3 text-[#ef5a24]" />
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <DemoAccountSelector
+                className="mt-3"
+                selectedEmail={email}
+                onSelectAccount={({ email: selEmail, password: selPassword }) => {
+                  setEmail(selEmail);
+                  setPassword(selPassword);
+                  setErrorMessage(null);
+                }}
+              />
 
               <div className="pt-3">
                 <button

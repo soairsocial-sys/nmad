@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
+import { DemoAccountSelector } from './DemoAccountSelector';
 
 interface AdminLoginPageProps {
   onSuccessRedirect: (targetDashboardUrl: string) => void;
@@ -707,40 +708,16 @@ export const AdminLoginPage: React.FC<AdminLoginPageProps> = ({
             </form>
           )}
 
-          {/* Test Accounts Reference Accordion */}
-          <div className="border border-[#eae7e1] rounded-2xl p-3 bg-[#faf9f6] space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-[#181716] uppercase tracking-wider">
-                Phase 1 Development Test Accounts (Password: AdGrid2026!)
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5 pt-1">
-              {[
-                { email: 'admin@adgrid.test', role: 'Platform Admin' },
-                { email: 'agency@adgrid.test', role: 'Agency Admin' },
-                { email: 'campaigns@adgrid.test', role: 'Campaign Manager' },
-                { email: 'operations@adgrid.test', role: 'Operations Manager' },
-                { email: 'client@adgrid.test', role: 'Brand Client' },
-                { email: 'mediaowner@adgrid.test', role: 'Media Owner' },
-                { email: 'vendor@adgrid.test', role: 'Vendor' },
-                { email: 'fieldagent@adgrid.test', role: 'Field Agent' },
-              ].map((acc) => (
-                <button
-                  key={acc.email}
-                  type="button"
-                  onClick={() => {
-                    setEmail(acc.email);
-                    setPassword('AdGrid2026!');
-                    setAuthMode('signin');
-                  }}
-                  className="text-left px-2 py-1 rounded bg-white border border-[#eae7e1] hover:border-[#ef5a24] text-[10px] text-zinc-700 hover:text-[#ef5a24] transition-colors flex justify-between items-center"
-                >
-                  <span className="font-semibold truncate">{acc.role}</span>
-                  <span className="text-[9px] text-zinc-400">Select</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Server-Controlled Demo Accounts Selector */}
+          <DemoAccountSelector
+            selectedEmail={email}
+            onSelectAccount={({ email: selEmail, password: selPassword }) => {
+              setEmail(selEmail);
+              setPassword(selPassword);
+              setAuthMode('signin');
+              setError(null);
+            }}
+          />
 
           {/* Security Guarantee Note */}
           <div className="p-3 rounded-2xl bg-[#faf9f6] border border-[#eae7e1] flex items-start gap-2.5 text-xs text-zinc-600">

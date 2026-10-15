@@ -40,8 +40,22 @@ import {
 import { authenticator } from 'otplib';
 import { workspaceRouter } from './workspaces';
 import { subscriptionsRouter } from './subscriptions';
+import {
+  ensureDemoAccountsProvisioned,
+  getDemoConfigPayload,
+  isDemoAuthEnabled,
+  isDemoEmail,
+  SHARED_DEMO_PASSWORD,
+} from './demoProvisioning';
 
 dotenv.config();
+
+// Idempotently ensure demo accounts are provisioned if demo auth is enabled
+if (isDemoAuthEnabled()) {
+  ensureDemoAccountsProvisioned().catch((err) => {
+    console.warn('[Demo Provisioning] Startup initialization deferred:', err);
+  });
+}
 
 const app = express();
 app.set('trust proxy', 1);
@@ -774,6 +788,11 @@ app.post(`${API_PREFIX}/auth/accept-invitation`, strictRateLimit, async (req: Re
   });
 });
 
+// Public Demo Configuration endpoint for login UI selector
+app.get(`${API_PREFIX}/auth/demo-config`, (_req: Request, res: Response) => {
+  res.json(getDemoConfigPayload());
+});
+
 // Sign In
 app.post(`${API_PREFIX}/auth/login`, authRateLimit, async (req: Request, res: Response) => {
   const { email, password, portalType } = req.body || {};
@@ -785,6 +804,13 @@ app.post(`${API_PREFIX}/auth/login`, authRateLimit, async (req: Request, res: Re
   }
 
   const normalizedEmail = String(email).trim().toLowerCase();
+
+  // If logging in with a predefined demo account while demo auth is enabled, ensure account is provisioned
+  if (isDemoEmail(normalizedEmail) && isDemoAuthEnabled()) {
+    await ensureDemoAccountsProvisioned().catch((err) => {
+      console.warn('[Demo Login] Idempotent account provisioning check:', err);
+    });
+  }
 
   // Find user in database
   const user = await prisma.user.findUnique({
@@ -806,10 +832,21 @@ app.post(`${API_PREFIX}/auth/login`, authRateLimit, async (req: Request, res: Re
     });
   }
 
-  // Verify password with bcrypt, plus legacy demo password fallback
+  // Verify password with bcrypt
   let passwordMatches = await verifyPassword(String(password), user.passwordHash);
-  if (!passwordMatches && (password === 'AdGrid2026!' || password === 'AfriOOH!2026')) {
+
+  // Strict, isolated demo password verification ONLY for pre-configured demo accounts when DEMO_AUTH_ENABLED is active
+  if (
+    !passwordMatches &&
+    isDemoAuthEnabled() &&
+    isDemoEmail(normalizedEmail) &&
+    password === SHARED_DEMO_PASSWORD
+  ) {
     passwordMatches = true;
+    // Resync the password hash in the database to proper bcrypt hash
+    hashPassword(SHARED_DEMO_PASSWORD).then((newHash) => {
+      prisma.user.update({ where: { id: user.id }, data: { passwordHash: newHash } }).catch(() => {});
+    });
   }
 
   if (!passwordMatches) {
@@ -966,12 +1003,19 @@ app.post(`${API_PREFIX}/auth/login`, authRateLimit, async (req: Request, res: Re
     req,
   });
 
-  // Set httpOnly cookie
+  // Set httpOnly cookies for session management
   res.cookie('refresh_token', rawRefreshToken, {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  res.cookie('access_token', accessToken, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 15 * 60 * 1000,
   });
 
   return res.json({
@@ -1276,6 +1320,7 @@ app.post(`${API_PREFIX}/auth/logout`, async (req: Request, res: Response) => {
   }
 
   res.clearCookie('refresh_token');
+  res.clearCookie('access_token');
   return res.json({ success: true, message: 'Logged out successfully.' });
 });
 
@@ -1283,6 +1328,7 @@ app.post(`${API_PREFIX}/auth/logout`, async (req: Request, res: Response) => {
 app.post(`${API_PREFIX}/auth/logout-all`, requireAuth, async (req: Request, res: Response) => {
   await revokeAllSessionsForUser(req.user!.id, req);
   res.clearCookie('refresh_token');
+  res.clearCookie('access_token');
   return res.json({ success: true, message: 'All active sessions have been logged out.' });
 });
 
