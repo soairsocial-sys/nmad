@@ -5,12 +5,12 @@
   "outputDirectory": "dist",
   "cleanUrls": true,
   "functions": {
-    "api/*.{js,ts}": {
+    "api/index.ts": {
       "includeFiles": "prisma/**",
       "maxDuration": 30,
       "memory": 1024
     },
-    "api/**/*.{js,ts}": {
+    "api/[...path].ts": {
       "includeFiles": "prisma/**",
       "maxDuration": 30,
       "memory": 1024
